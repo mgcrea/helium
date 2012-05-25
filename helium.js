@@ -108,7 +108,7 @@ _.mixin({
 	});
 	Helium.Events.extend = extend;
 
-	Helium.define = function(className, data) {
+	Helium.define = function(className, data, staticProps) {
 
 		var base = window,
 			parent = data.extend || function() {},
@@ -152,7 +152,7 @@ _.mixin({
 		// Merge configuration from parent
 		if(parent.prototype && parent.prototype.config) data.config = _.extend({}, _.clone(parent.prototype.config), data.config || {});
 
-		if(_.isFunction(parent.extend)) base[key] = parent.extend(_.extend(data, protoProps));
+		if(_.isFunction(parent.extend)) base[key] = parent.extend(_.extend(data, protoProps), staticProps);
 		else base[key] = _.extend({}, data, protoProps);
 	};
 
@@ -325,34 +325,7 @@ Helium.define('Component', {
 		this.$el.attr('id', id);
 	},
 	compileTemplate: function(template) {
-		template = template || this.template;
-		if(!template) return false;
-
-		var compiled;
-		if(_.isFunction(template)) {
-			compiled = template;
-		} else if(_.isString(template)) {
-			if(window.Handlebars) {
-				if(template[0] == '#') {
-					// Use cached version if available
-					Handlebars.compiledTemplates = Handlebars.compiledTemplates || {};
-					if(Handlebars.compiledTemplates[template]) compiled = Handlebars.compiledTemplates[template];
-					else Handlebars.compiledTemplates[template] = compiled = Handlebars.compile($(template).html());
-				} else {
-					compiled = Handlebars.compile(template);
-				}
-			} else if(window.Mustache) {
-				if(template[0] == '#') {
-					compiled = ich[template.substring(1)];
-				} else {
-					compiled = function(options) { return Mustache.render(template, options); };
-				}
-			} else {
-				throw 'Helium did not found either Handlebars or Mustache to compile templates.';
-			}
-		}
-
-		return compiled;
+		return Helium.Component.compileTemplate(template || this.template);
 	},
 	buildTemplate: function(options, compiledTemplate) {
 		compiledTemplate = compiledTemplate || this._compiledTemplate;
@@ -383,6 +356,36 @@ Helium.define('Component', {
 		}
 
 		return this;
+	}
+}, {
+	compileTemplate: function(template) {
+		if(!template) return false;
+
+		var compiled;
+		if(_.isFunction(template)) {
+			compiled = template;
+		} else if(_.isString(template)) {
+			if(window.Handlebars) {
+				if(template[0] == '#') {
+					// Use cached version if available
+					Handlebars.compiledTemplates = Handlebars.compiledTemplates || {};
+					if(Handlebars.compiledTemplates[template]) compiled = Handlebars.compiledTemplates[template];
+					else Handlebars.compiledTemplates[template] = compiled = Handlebars.compile($(template).html());
+				} else {
+					compiled = Handlebars.compile(template);
+				}
+			} else if(window.Mustache) {
+				if(template[0] == '#') {
+					compiled = ich[template.substring(1)];
+				} else {
+					compiled = function(options) { return Mustache.render(template, options); };
+				}
+			} else {
+				throw 'Helium did not found either Handlebars or Mustache to compile templates.';
+			}
+		}
+
+		return compiled;
 	}
 });
 
